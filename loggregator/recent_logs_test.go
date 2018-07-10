@@ -128,7 +128,7 @@ func deployLogApp(name string) string {
 		"GOPACKAGENAME", "github.com/cloudfoundry/cfar-logging-acceptance-tests/apps/constant-logger",
 	), defaultTimeout).Should(Exit(0), "Failed to push "+appName)
 
-	Expect(cf.Cf("start", appName).Wait(defaultTimeout)).Should(Exit(0))
+	Expect(cf.Cf("start", appName).Wait(defaultTimeout * 3)).Should(Exit(0))
 
 	return appName
 }

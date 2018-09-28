@@ -1,6 +1,7 @@
 package draincli_test
 
 import (
+	"bytes"
 	"os"
 	"testing"
 
@@ -29,6 +30,13 @@ func TestAcceptance(t *testing.T) {
 	}
 
 	RegisterFailHandler(Fail)
+
+	output := cf.CfRedact("plugins").Wait(5).Buffer()
+	if !bytes.Contains(output.Contents(), []byte("drains")) {
+		t.Fatal("cf-drain-cli plugin must be installed")
+	}
+	println()
+
 	RunSpecs(t, "Acceptance Suite")
 }
 
@@ -48,8 +56,6 @@ var _ = BeforeSuite(func() {
 
 	createOrgAndSpace(cfg)
 	cfTarget(cfg)
-
-	installDrainsPlugin(cfg)
 })
 
 var _ = AfterSuite(func() {
@@ -90,11 +96,4 @@ func cfTarget(cfg *draincli.TestConfig) {
 
 func deleteOrg(cfg *draincli.TestConfig) {
 	Eventually(cf.Cf("delete-org", org, "-f"), cfg.DefaultTimeout).Should(Exit(0))
-}
-
-func installDrainsPlugin(cfg *draincli.TestConfig) {
-	cliPath, err := Build("../cmd/cf-drain-cli/main.go")
-	Expect(err).ToNot(HaveOccurred())
-
-	Eventually(cf.Cf("install-plugin", cliPath, "-f"), cfg.DefaultTimeout).Should(Exit(0))
 }

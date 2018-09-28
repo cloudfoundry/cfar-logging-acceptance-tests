@@ -32,7 +32,7 @@ func SilienceGinkgoWriter(f func()) {
 func LogsTail(appName string) *Session {
 	var s *Session
 	SilienceGinkgoWriter(func() {
-		s = cf.Cf("tail", appName, "--lines", "125")
+		s = cf.Cf("logs", appName, "--recent")
 	})
 
 	return s
@@ -41,7 +41,7 @@ func LogsTail(appName string) *Session {
 func LogsFollow(appName string) *Session {
 	var s *Session
 	SilienceGinkgoWriter(func() {
-		s = cf.Cf("tail", "--follow", appName)
+		s = cf.Cf("logs")
 	})
 
 	return s

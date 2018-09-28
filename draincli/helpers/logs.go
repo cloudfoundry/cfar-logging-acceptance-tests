@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	logEmitterApp = "apps/ruby_simple"
-	syslogDrain   = "apps/syslog-drain-listener"
+	logEmitterApp = "../apps/ruby_simple"
+	syslogDrain   = "../apps/syslog-drain-listener"
 )
 
 func SilienceGinkgoWriter(f func()) {

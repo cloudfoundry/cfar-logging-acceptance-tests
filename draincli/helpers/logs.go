@@ -55,6 +55,7 @@ func PushLogWriter() string {
 		"push",
 		appName,
 		"-p", logEmitterApp,
+		"-m", "64M",
 	), cfg.AppPushTimeout).Should(Exit(0), "Failed to push app")
 
 	return appName
@@ -71,6 +72,7 @@ func PushSyslogServer() string {
 		"-p", syslogDrain,
 		"-b", "go_buildpack",
 		"-f", syslogDrain+"/manifest.yml",
+		"-m", "64M",
 	), cfg.AppPushTimeout).Should(Exit(0), "Failed to push app")
 
 	return appName

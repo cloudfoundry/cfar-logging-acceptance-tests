@@ -1,6 +1,7 @@
 package loggregator
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -53,9 +54,9 @@ var _ = Describe("cf logs --recent", func() {
 })
 
 type config struct {
-	Username          string `env:"USERNAME, required"`
-	Password          string `env:"PASSWORD, required"`
-	APIEndpoint       string `env:"API_ENDPOINT, required"`
+	Username          string `env:"CF_ADMIN_USER,     required"`
+	Password          string `env:"CF_ADMIN_PASSWORD, required"`
+	APIEndpoint       string `env:"CF_DOMAIN,         required"`
 	SkipSSLValidation bool   `env:"SKIP_SSL_VALIDATION"`
 }
 
@@ -71,7 +72,7 @@ func login(cfg config) {
 
 	Eventually(cf.Cf(
 		"login",
-		"-a", cfg.APIEndpoint,
+		"-a", fmt.Sprintf("api.%s", cfg.APIEndpoint),
 		"-u", cfg.Username,
 		"-p", cfg.Password,
 		s,

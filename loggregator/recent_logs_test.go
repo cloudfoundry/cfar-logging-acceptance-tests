@@ -56,7 +56,7 @@ var _ = Describe("cf logs --recent", func() {
 type config struct {
 	Username          string `env:"CF_ADMIN_USER,     required"`
 	Password          string `env:"CF_ADMIN_PASSWORD, required"`
-	APIEndpoint       string `env:"CF_DOMAIN,         required"`
+	CFDomain          string `env:"CF_DOMAIN,         required"`
 	SkipSSLValidation bool   `env:"SKIP_SSL_VALIDATION"`
 }
 
@@ -72,7 +72,7 @@ func login(cfg config) {
 
 	Eventually(cf.Cf(
 		"login",
-		"-a", fmt.Sprintf("api.%s", cfg.APIEndpoint),
+		"-a", fmt.Sprintf("api.%s", cfg.CFDomain),
 		"-u", cfg.Username,
 		"-p", cfg.Password,
 		s,

@@ -27,8 +27,8 @@ var _ = Describe("ServiceDrain", func() {
 		interrupt         chan struct{}
 		logs              *Session
 		drains            *Session
-		drainsRegex       = `App\s+Drain\s+Type\s+URL
-LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}\s+Logs\s+syslog://\d+[.]\d+[.]\d+[.]\d+:\d+`
+		drainsRegex       = `App\s+Drain\s+Type\s+URL\s+Use Agent
+LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}\s+Logs\s+syslog://\d+[.]\d+[.]\d+[.]\d+:\d+\s+false`
 	)
 
 	BeforeEach(func() {
@@ -98,6 +98,25 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 
 		Eventually(logs, draincli.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage1))
 		Consistently(logs, 10).ShouldNot(Say(randomMessage2))
+	})
+
+	It("drains an app's logs to syslog endpoint using agent", func() {
+		syslogDrainAddr := SyslogDrainAddress(listenerAppName)
+		syslogDrainURL := "syslog://" + syslogDrainAddr
+
+		CF(
+			"drain",
+			logWriterAppName1,
+			syslogDrainURL,
+			"--use-agent",
+		)
+
+		s := Drains()
+		contents := string(s.Out.Contents())
+
+		Expect(contents).To(ContainSubstring("syslog-v3://" + syslogDrainAddr))
+		Expect(contents).To(ContainSubstring("Use Agent"))
+		Expect(contents).To(ContainSubstring("true"))
 	})
 
 	It("binds an app to a syslog endpoint", func() {
@@ -254,8 +273,9 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 			"cf-drain-8075db89-6080-4b14-93e5-10d69f24d7e1",
 		)
 
-		drains = cf.Cf("drains")
-		Eventually(drains, draincli.Config().DefaultTimeout).Should(Say(drainsRegex))
+		Eventually(func() *Session {
+			return cf.Cf("drains")
+		}, draincli.Config().DefaultTimeout).Should(Say(drainsRegex))
 
 		CF(
 			"delete-drain",

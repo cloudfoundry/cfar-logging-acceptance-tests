@@ -258,8 +258,9 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 			syslogDrainURL,
 		)
 
-		drains = cf.Cf("drains")
-		Eventually(drains, draincli.Config().DefaultTimeout).Should(Say(drainsRegex))
+		Eventually(func() *Session {
+			return cf.Cf("drains").Wait(draincli.Config().DefaultTimeout)
+		}, draincli.Config().DefaultTimeout).Should(Say(drainsRegex))
 	})
 
 	It("deletes the drain", func() {
@@ -274,8 +275,8 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 		)
 
 		Eventually(func() *Session {
-			return cf.Cf("drains")
-		}, draincli.Config().DefaultTimeout).Should(Say(drainsRegex))
+			return cf.Cf("drains").Wait(draincli.Config().DefaultTimeout)
+		}, draincli.Config().DefaultTimeout*2).Should(Say(drainsRegex))
 
 		CF(
 			"delete-drain",
@@ -283,8 +284,9 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 			"--force", // Skip confirmation
 		)
 
-		drains = cf.Cf("drains")
-		Consistently(drains, draincli.Config().DefaultTimeout).ShouldNot(Say("cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"))
+		Consistently(func() *Session {
+			return cf.Cf("drains").Wait(draincli.Config().DefaultTimeout)
+		}, draincli.Config().DefaultTimeout).ShouldNot(Say("cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"))
 	})
 
 	It("drain-space reports error when space-drain with same drain-name exists", func() {

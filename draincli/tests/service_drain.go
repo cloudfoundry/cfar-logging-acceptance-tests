@@ -29,7 +29,7 @@ var _ = Describe("ServiceDrain", func() {
 		logs              *Session
 		drains            *Session
 		drainsRegex       = `App\s+Drain\s+Type\s+URL\s+Use Agent
-LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}\s+Logs\s+syslog://\d+[.]\d+[.]\d+[.]\d+:\d+\s+false`
+LOG-EMITTER-1--[0-9a-f]{16}\s+some-drain-[0-9a-f]{19}\s+Logs\s+syslog://\d+[.]\d+[.]\d+[.]\d+:\d+\s+false`
 	)
 
 	BeforeEach(func() {
@@ -251,12 +251,14 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 	})
 
 	It("lists the all the drains", func() {
+		drainName := fmt.Sprintf("some-drain-%d", time.Now().UnixNano())
 		syslogDrainURL := "syslog://" + SyslogDrainAddress(listenerAppName)
 
 		CF(
 			"drain",
 			logWriterAppName1,
 			syslogDrainURL,
+			"--drain-name", drainName,
 		)
 
 		Eventually(func() *Session {

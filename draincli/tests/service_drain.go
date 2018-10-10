@@ -11,6 +11,7 @@ import (
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/generator"
 	"github.com/cloudfoundry/cfar-logging-acceptance-tests/draincli"
+
 	. "github.com/cloudfoundry/cfar-logging-acceptance-tests/draincli/helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -224,7 +225,7 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 			s := cf.Cf("drains")
 			Eventually(s, draincli.Config().DefaultTimeout).Should(Exit(0))
 			return string(append(s.Out.Contents(), s.Err.Contents()...))
-		}, draincli.Config().DefaultTimeout+3*time.Minute).Should(And(
+		}, draincli.Config().DefaultTimeout+3*time.Minute, 500).Should(And(
 			ContainSubstring(drainName),
 			ContainSubstring(singleDrainName),
 		))
@@ -240,7 +241,7 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 			s := cf.Cf("drains")
 			Eventually(s, draincli.Config().DefaultTimeout).Should(Exit(0))
 			return string(append(s.Out.Contents(), s.Err.Contents()...))
-		}, draincli.Config().DefaultTimeout+3*time.Minute).ShouldNot(ContainSubstring(drainName))
+		}, draincli.Config().DefaultTimeout+3*time.Minute, 500).ShouldNot(ContainSubstring(drainName))
 
 		Consistently(func() string {
 			s := cf.Cf("drains")
@@ -260,10 +261,11 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 
 		Eventually(func() *Session {
 			return cf.Cf("drains").Wait(draincli.Config().DefaultTimeout)
-		}, draincli.Config().DefaultTimeout).Should(Say(drainsRegex))
+		}, draincli.Config().DefaultTimeout, 500).Should(Say(drainsRegex))
 	})
 
 	It("deletes the drain", func() {
+		drainName := fmt.Sprintf("some-drain-%d", time.Now().UnixNano())
 		syslogDrainURL := "syslog://" + SyslogDrainAddress(listenerAppName)
 
 		CF(
@@ -271,26 +273,27 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 			logWriterAppName1,
 			syslogDrainURL,
 			"--drain-name",
-			"cf-drain-8075db89-6080-4b14-93e5-10d69f24d7e1",
+			drainName,
 		)
 
 		Eventually(func() *Session {
 			return cf.Cf("drains").Wait(draincli.Config().DefaultTimeout)
-		}, draincli.Config().DefaultTimeout*2).Should(Say(drainsRegex))
+		}, draincli.Config().DefaultTimeout*2, 500).Should(Say(drainsRegex))
 
 		CF(
 			"delete-drain",
-			"cf-drain-8075db89-6080-4b14-93e5-10d69f24d7e1",
+			drainName,
 			"--force", // Skip confirmation
 		)
 
 		Consistently(func() *Session {
 			return cf.Cf("drains").Wait(draincli.Config().DefaultTimeout)
-		}, draincli.Config().DefaultTimeout).ShouldNot(Say("cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"))
+		}, draincli.Config().DefaultTimeout).ShouldNot(Say(drainName))
 	})
 
 	It("drain-space reports error when space-drain with same drain-name exists", func() {
 		syslogDrainURL := "syslog://" + SyslogDrainAddress(listenerAppName)
+		drainName := fmt.Sprintf("some-drain-%d", time.Now().UnixNano())
 
 		execPath, err := Build("code.cloudfoundry.org/cf-drain-cli/cmd/space_drain")
 		Expect(err).ToNot(HaveOccurred())
@@ -301,14 +304,14 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 			1*time.Minute,
 			"drain-space",
 			syslogDrainURL,
-			"--drain-name", "some-space-drain",
+			"--drain-name", drainName,
 			"--path", path.Dir(execPath),
 		)
 
 		drainSpace := cf.Cf(
 			"drain-space",
 			syslogDrainURL,
-			"--drain-name", "some-space-drain",
+			"--drain-name", drainName,
 			"--path", path.Dir(execPath),
 		)
 
@@ -316,6 +319,8 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 	})
 
 	It("a space-drain cannot drain to itself or to any other space-drains", func() {
+		papertrailDrainName := fmt.Sprintf("papertrail-%d", time.Now().UnixNano())
+		splunkDrainName := fmt.Sprintf("splunk-%d", time.Now().UnixNano())
 		syslogDrainURL1 := "syslog://space-drain-1.papertrail.com"
 		syslogDrainURL2 := "syslog://space-drain-2.splunk.com"
 
@@ -328,7 +333,7 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 			1*time.Minute,
 			"drain-space",
 			syslogDrainURL1,
-			"--drain-name", "space-drain-papertrail",
+			"--drain-name", papertrailDrainName,
 			"--path", path.Dir(execPath),
 		)
 
@@ -336,16 +341,16 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 			1*time.Minute,
 			"drain-space",
 			syslogDrainURL2,
-			"--drain-name", "space-drain-splunk",
+			"--drain-name", splunkDrainName,
 			"--path", path.Dir(execPath),
 		)
 
-		papertrailDrainRegex := `(?m:^space-drain-papertrail)`
+		papertrailDrainRegex := fmt.Sprintf(`(?m:^%s)`, papertrailDrainName)
 
 		Eventually(func() string {
 			s := cf.Cf("drains")
 			Eventually(s, draincli.Config().DefaultTimeout).Should(Exit(0))
 			return string(append(s.Out.Contents(), s.Err.Contents()...))
-		}, draincli.Config().DefaultTimeout+3*time.Minute).ShouldNot(MatchRegexp(papertrailDrainRegex))
+		}, draincli.Config().DefaultTimeout+3*time.Minute, 500).ShouldNot(MatchRegexp(papertrailDrainRegex))
 	})
 })

@@ -25,8 +25,7 @@ var _ = Describe("ServiceDrain", func() {
 		interrupt   chan struct{}
 		logs        *Session
 		drains      *Session
-		drainsRegex = `App\s+Drain\s+Type\s+URL\s+Use Agent
-LOG-EMITTER-1--[0-9a-f]{16}\s+some-drain-[0-9a-f]{19}\s+Logs\s+https://.+\s+false`
+		drainsRegex = `LOG-EMITTER-1--[0-9a-f]{16}\s+some-drain-[0-9a-f]{19}\s+Logs\s+https://.+\s+false`
 	)
 
 	BeforeEach(func() {

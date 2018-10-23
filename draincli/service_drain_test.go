@@ -1,4 +1,4 @@
-package tests
+package draincli_test
 
 import (
 	"fmt"
@@ -22,38 +22,15 @@ import (
 var _ = Describe("ServiceDrain", func() {
 
 	var (
-		listenerAppName   string
-		logWriterAppName1 string
-		logWriterAppName2 string
-		interrupt         chan struct{}
-		logs              *Session
-		drains            *Session
-		drainsRegex       = `App\s+Drain\s+Type\s+URL\s+Use Agent
-LOG-EMITTER-1--[0-9a-f]{16}\s+some-drain-[0-9a-f]{19}\s+Logs\s+syslog://\d+[.]\d+[.]\d+[.]\d+:\d+\s+false`
+		interrupt   chan struct{}
+		logs        *Session
+		drains      *Session
+		drainsRegex = `App\s+Drain\s+Type\s+URL\s+Use Agent
+LOG-EMITTER-1--[0-9a-f]{16}\s+some-drain-[0-9a-f]{19}\s+Logs\s+https://.+\s+false`
 	)
 
 	BeforeEach(func() {
 		interrupt = make(chan struct{}, 1)
-
-		var wg sync.WaitGroup
-		defer wg.Wait()
-
-		wg.Add(3)
-		go func() {
-			defer wg.Done()
-			defer GinkgoRecover()
-			listenerAppName = PushSyslogServer()
-		}()
-		go func() {
-			defer wg.Done()
-			defer GinkgoRecover()
-			logWriterAppName1 = PushLogWriter()
-		}()
-		go func() {
-			defer wg.Done()
-			defer GinkgoRecover()
-			logWriterAppName2 = PushLogWriter()
-		}()
 	})
 
 	AfterEach(func() {
@@ -68,20 +45,27 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+some-drain-[0-9a-f]{19}\s+Logs\s+syslog://\d+[.]\d
 
 		var wg sync.WaitGroup
 		defer wg.Wait()
-		deleteApp := func(appName string) {
-			defer wg.Done()
-			defer GinkgoRecover()
-			CF("delete", appName, "-f", "-r")
-		}
 
 		wg.Add(3)
-		go deleteApp(logWriterAppName1)
-		go deleteApp(logWriterAppName2)
-		go deleteApp(listenerAppName)
+		go func() {
+			defer wg.Done()
+			defer GinkgoRecover()
+			cf.Cf("restart", listenerAppName).Wait(draincli.Config().DefaultTimeout)
+		}()
+		go func() {
+			defer wg.Done()
+			defer GinkgoRecover()
+			cf.Cf("restart", logWriterAppName1).Wait(draincli.Config().DefaultTimeout)
+		}()
+		go func() {
+			defer wg.Done()
+			defer GinkgoRecover()
+			cf.Cf("restart", logWriterAppName2).Wait(draincli.Config().DefaultTimeout)
+		}()
 	})
 
 	It("drains an app's logs to syslog endpoint", func() {
-		syslogDrainURL := "syslog://" + SyslogDrainAddress(listenerAppName)
+		syslogDrainURL := fmt.Sprintf("https://%s.%s", listenerAppName, draincli.Config().CFDomain)
 
 		CF(
 			"drain",
@@ -102,8 +86,8 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+some-drain-[0-9a-f]{19}\s+Logs\s+syslog://\d+[.]\d
 	})
 
 	It("drains an app's logs to syslog endpoint using agent", func() {
-		syslogDrainAddr := SyslogDrainAddress(listenerAppName)
-		syslogDrainURL := "syslog://" + syslogDrainAddr
+		syslogDrainAddr := fmt.Sprintf("%s.%s", listenerAppName, draincli.Config().CFDomain)
+		syslogDrainURL := "https://" + syslogDrainAddr
 
 		CF(
 			"drain",
@@ -115,13 +99,13 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+some-drain-[0-9a-f]{19}\s+Logs\s+syslog://\d+[.]\d
 		s := Drains()
 		contents := string(s.Out.Contents())
 
-		Expect(contents).To(ContainSubstring("syslog-v3://" + syslogDrainAddr))
+		Expect(contents).To(ContainSubstring("https-v3://" + syslogDrainAddr))
 		Expect(contents).To(ContainSubstring("Use Agent"))
 		Expect(contents).To(ContainSubstring("true"))
 	})
 
 	It("binds an app to a syslog endpoint", func() {
-		syslogDrainURL := "syslog://" + SyslogDrainAddress(listenerAppName)
+		syslogDrainURL := fmt.Sprintf("https://%s.%s", listenerAppName, draincli.Config().CFDomain)
 		drainName := fmt.Sprintf("some-drain-%d", time.Now().UnixNano())
 
 		CF(
@@ -150,7 +134,7 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+some-drain-[0-9a-f]{19}\s+Logs\s+syslog://\d+[.]\d
 	})
 
 	It("drains all apps in space to a syslog endpoint", func() {
-		syslogDrainURL := "syslog://" + SyslogDrainAddress(listenerAppName)
+		syslogDrainURL := fmt.Sprintf("https://%s.%s", listenerAppName, draincli.Config().CFDomain)
 		drainName := fmt.Sprintf("some-drain-%d", time.Now().UnixNano())
 
 		execPath, err := Build("code.cloudfoundry.org/cf-drain-cli/cmd/space_drain")
@@ -197,7 +181,7 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+some-drain-[0-9a-f]{19}\s+Logs\s+syslog://\d+[.]\d
 	})
 
 	It("deletes space-drain but not other drains", func() {
-		syslogDrainURL := "syslog://" + SyslogDrainAddress(listenerAppName)
+		syslogDrainURL := fmt.Sprintf("https://%s.%s", listenerAppName, draincli.Config().CFDomain)
 		drainName := fmt.Sprintf("some-drain-%d", time.Now().UnixNano())
 		singleDrainName := fmt.Sprintf("single-some-drain-%d", time.Now().UnixNano())
 
@@ -250,9 +234,9 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+some-drain-[0-9a-f]{19}\s+Logs\s+syslog://\d+[.]\d
 		}, draincli.Config().DefaultTimeout).Should(ContainSubstring(singleDrainName))
 	})
 
-	It("lists the all the drains", func() {
+	It("lists all the drains", func() {
 		drainName := fmt.Sprintf("some-drain-%d", time.Now().UnixNano())
-		syslogDrainURL := "syslog://" + SyslogDrainAddress(listenerAppName)
+		syslogDrainURL := fmt.Sprintf("https://%s.%s", listenerAppName, draincli.Config().CFDomain)
 
 		CF(
 			"drain",
@@ -268,7 +252,7 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+some-drain-[0-9a-f]{19}\s+Logs\s+syslog://\d+[.]\d
 
 	It("deletes the drain", func() {
 		drainName := fmt.Sprintf("some-drain-%d", time.Now().UnixNano())
-		syslogDrainURL := "syslog://" + SyslogDrainAddress(listenerAppName)
+		syslogDrainURL := fmt.Sprintf("https://%s.%s", listenerAppName, draincli.Config().CFDomain)
 
 		CF(
 			"drain",
@@ -294,7 +278,7 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+some-drain-[0-9a-f]{19}\s+Logs\s+syslog://\d+[.]\d
 	})
 
 	It("drain-space reports error when space-drain with same drain-name exists", func() {
-		syslogDrainURL := "syslog://" + SyslogDrainAddress(listenerAppName)
+		syslogDrainURL := fmt.Sprintf("https://%s.%s", listenerAppName, draincli.Config().CFDomain)
 		drainName := fmt.Sprintf("some-drain-%d", time.Now().UnixNano())
 
 		execPath, err := Build("code.cloudfoundry.org/cf-drain-cli/cmd/space_drain")

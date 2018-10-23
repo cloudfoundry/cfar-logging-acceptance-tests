@@ -3,6 +3,7 @@ package draincli_test
 import (
 	"bytes"
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
@@ -12,7 +13,7 @@ import (
 	. "github.com/onsi/gomega/gexec"
 
 	"github.com/cloudfoundry/cfar-logging-acceptance-tests/draincli"
-	_ "github.com/cloudfoundry/cfar-logging-acceptance-tests/draincli/tests" //Required for ginkgo to pick up tests in subdirectories
+	"github.com/cloudfoundry/cfar-logging-acceptance-tests/draincli/helpers"
 )
 
 func TestAcceptance(t *testing.T) {
@@ -46,6 +47,10 @@ var (
 	org           string
 	space         string
 	cliBinaryPath string
+
+	listenerAppName   string
+	logWriterAppName1 string
+	logWriterAppName2 string
 )
 
 var _ = BeforeSuite(func() {
@@ -56,6 +61,26 @@ var _ = BeforeSuite(func() {
 
 	createOrgAndSpace(cfg)
 	cfTarget(cfg)
+
+	var wg sync.WaitGroup
+	defer wg.Wait()
+
+	wg.Add(3)
+	go func() {
+		defer wg.Done()
+		defer GinkgoRecover()
+		listenerAppName = helpers.PushSyslogServer()
+	}()
+	go func() {
+		defer wg.Done()
+		defer GinkgoRecover()
+		logWriterAppName1 = helpers.PushLogWriter()
+	}()
+	go func() {
+		defer wg.Done()
+		defer GinkgoRecover()
+		logWriterAppName2 = helpers.PushLogWriter()
+	}()
 })
 
 var _ = AfterSuite(func() {

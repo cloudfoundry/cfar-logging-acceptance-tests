@@ -3,7 +3,6 @@ package draincli_test
 import (
 	"bytes"
 	"os"
-	"sync"
 	"testing"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
@@ -62,25 +61,9 @@ var _ = BeforeSuite(func() {
 	createOrgAndSpace(cfg)
 	cfTarget(cfg)
 
-	var wg sync.WaitGroup
-	defer wg.Wait()
-
-	wg.Add(3)
-	go func() {
-		defer wg.Done()
-		defer GinkgoRecover()
-		listenerAppName = helpers.PushSyslogServer()
-	}()
-	go func() {
-		defer wg.Done()
-		defer GinkgoRecover()
-		logWriterAppName1 = helpers.PushLogWriter()
-	}()
-	go func() {
-		defer wg.Done()
-		defer GinkgoRecover()
-		logWriterAppName2 = helpers.PushLogWriter()
-	}()
+	listenerAppName = helpers.PushSyslogServer()
+	logWriterAppName1 = helpers.PushLogWriter()
+	logWriterAppName2 = helpers.PushLogWriter()
 })
 
 var _ = AfterSuite(func() {

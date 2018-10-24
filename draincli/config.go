@@ -23,7 +23,7 @@ var config *TestConfig
 func LoadConfig() (*TestConfig, error) {
 	config := &TestConfig{
 		DefaultTimeout: 90 * time.Second,
-		AppPushTimeout: 90 * time.Second,
+		AppPushTimeout: 180 * time.Second,
 	}
 	err := envstruct.Load(config)
 	if err != nil {

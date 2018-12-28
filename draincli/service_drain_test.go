@@ -103,7 +103,7 @@ var _ = Describe("ServiceDrain", func() {
 		Expect(contents).To(ContainSubstring("true"))
 	})
 
-	It("binds an app to a syslog endpoint", func() {
+	FIt("binds an app to a syslog endpoint", func() {
 		syslogDrainURL := fmt.Sprintf("https://%s.%s", listenerAppName, draincli.Config().CFDomain)
 		drainName := fmt.Sprintf("some-drain-%d", time.Now().UnixNano())
 
@@ -128,8 +128,11 @@ var _ = Describe("ServiceDrain", func() {
 		go WriteToLogsApp(interrupt, randomMessage1, logWriterAppName1)
 		go WriteToLogsApp(interrupt, randomMessage2, logWriterAppName2)
 
-		Eventually(logs, draincli.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage1))
-		Eventually(logs, draincli.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage2))
+		time.Sleep(draincli.Config().DefaultTimeout + 3*time.Minute)
+
+		Expect(string(logs.Out.Contents())).To(Equal("John rules"))
+		// Eventually(logs, draincli.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage1))
+		// Eventually(logs, draincli.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage2))
 	})
 
 	It("drains all apps in space to a syslog endpoint", func() {

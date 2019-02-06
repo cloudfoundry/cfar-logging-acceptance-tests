@@ -1,4 +1,4 @@
-package draincli
+package cli
 
 import (
 	"log"

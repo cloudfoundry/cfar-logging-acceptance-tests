@@ -1,4 +1,4 @@
-package draincli_test
+package cli_test
 
 import (
 	"bytes"
@@ -11,12 +11,12 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
 
-	"github.com/cloudfoundry/cfar-logging-acceptance-tests/draincli"
-	"github.com/cloudfoundry/cfar-logging-acceptance-tests/draincli/helpers"
+	"github.com/cloudfoundry/cfar-logging-acceptance-tests/cli"
+	"github.com/cloudfoundry/cfar-logging-acceptance-tests/cli/helpers"
 )
 
 func TestAcceptance(t *testing.T) {
-	_, err := draincli.LoadConfig()
+	_, err := cli.LoadConfig()
 
 	if err != nil {
 		// Pulling from os.Getenv directly, because the Config will fail and the
@@ -25,7 +25,7 @@ func TestAcceptance(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// skipping tests from draincli package
+		// skipping tests from cli package
 		t.Skip()
 	}
 
@@ -34,6 +34,9 @@ func TestAcceptance(t *testing.T) {
 	output := cf.CfRedact("plugins").Wait(5).Buffer()
 	if !bytes.Contains(output.Contents(), []byte("drains")) {
 		t.Fatal("cf-drain-cli plugin must be installed")
+	}
+	if !bytes.Contains(output.Contents(), []byte("log-stream")) {
+		t.Fatal("log-stream-cli plugin must be installed")
 	}
 	println()
 
@@ -53,7 +56,7 @@ var (
 )
 
 var _ = BeforeSuite(func() {
-	cfg := draincli.Config()
+	cfg := cli.Config()
 
 	targetAPI(cfg)
 	login(cfg)
@@ -67,12 +70,12 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	cfg := draincli.Config()
+	cfg := cli.Config()
 
 	deleteOrg(cfg)
 })
 
-func targetAPI(cfg *draincli.TestConfig) {
+func targetAPI(cfg *cli.TestConfig) {
 	commandArgs := []string{"api", "https://api." + cfg.CFDomain}
 
 	if cfg.SkipCertVerify {
@@ -82,7 +85,7 @@ func targetAPI(cfg *draincli.TestConfig) {
 	Eventually(cf.Cf(commandArgs...), cfg.DefaultTimeout).Should(Exit(0))
 }
 
-func login(cfg *draincli.TestConfig) {
+func login(cfg *cli.TestConfig) {
 	Eventually(
 		cf.Cf("auth",
 			cfg.CFAdminUser,
@@ -90,7 +93,7 @@ func login(cfg *draincli.TestConfig) {
 		), cfg.DefaultTimeout).Should(Exit(0))
 }
 
-func createOrgAndSpace(cfg *draincli.TestConfig) {
+func createOrgAndSpace(cfg *cli.TestConfig) {
 	org = generator.PrefixedRandomName(TestPrefix, "org")
 	space = generator.PrefixedRandomName(TestPrefix, "space")
 
@@ -98,10 +101,10 @@ func createOrgAndSpace(cfg *draincli.TestConfig) {
 	Eventually(cf.Cf("create-space", space, "-o", org), cfg.DefaultTimeout).Should(Exit(0))
 }
 
-func cfTarget(cfg *draincli.TestConfig) {
+func cfTarget(cfg *cli.TestConfig) {
 	Eventually(cf.Cf("target", "-o", org, "-s", space), cfg.DefaultTimeout).Should(Exit(0))
 }
 
-func deleteOrg(cfg *draincli.TestConfig) {
+func deleteOrg(cfg *cli.TestConfig) {
 	Eventually(cf.Cf("delete-org", org, "-f"), cfg.DefaultTimeout).Should(Exit(0))
 }

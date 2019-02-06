@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
-	"github.com/cloudfoundry/cfar-logging-acceptance-tests/draincli"
+	"github.com/cloudfoundry/cfar-logging-acceptance-tests/cli"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
@@ -15,7 +15,7 @@ func CF(args ...string) {
 	EventuallyWithOffset(
 		1,
 		cf.Cf(args...),
-		draincli.Config().DefaultTimeout,
+		cli.Config().DefaultTimeout,
 	).Should(Exit(0))
 }
 
@@ -25,5 +25,5 @@ func CFWithTimeout(timeout time.Duration, args ...string) {
 }
 
 func Drains() *Session {
-	return cf.Cf("drains").Wait(draincli.Config().DefaultTimeout)
+	return cf.Cf("drains").Wait(cli.Config().DefaultTimeout)
 }

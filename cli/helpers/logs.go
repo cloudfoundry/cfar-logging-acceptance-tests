@@ -9,7 +9,7 @@ import (
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/generator"
-	"github.com/cloudfoundry/cfar-logging-acceptance-tests/draincli"
+	"github.com/cloudfoundry/cfar-logging-acceptance-tests/cli"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
@@ -47,8 +47,17 @@ func LogsFollow(appName string) *Session {
 	return s
 }
 
+func LogStream() *Session {
+	var s *Session
+	SilienceGinkgoWriter(func() {
+		s = cf.Cf("log-stream")
+	})
+
+	return s
+}
+
 func PushLogWriter() string {
-	cfg := draincli.Config()
+	cfg := cli.Config()
 	appName := generator.PrefixedRandomName("LOG-EMITTER", "")
 
 	EventuallyWithOffset(1, cf.Cf(
@@ -62,7 +71,7 @@ func PushLogWriter() string {
 }
 
 func PushSyslogServer() string {
-	cfg := draincli.Config()
+	cfg := cli.Config()
 	appName := generator.PrefixedRandomName("SYSLOG-SERVER", "")
 
 	EventuallyWithOffset(1, cf.Cf(
@@ -79,7 +88,7 @@ func PushSyslogServer() string {
 }
 
 func WriteToLogsApp(doneChan chan struct{}, message, logWriterAppName string) {
-	cfg := draincli.Config()
+	cfg := cli.Config()
 	logUrl := fmt.Sprintf("http://%s.%s/log/%s", logWriterAppName, cfg.CFDomain, message)
 
 	defer GinkgoRecover()
@@ -97,7 +106,7 @@ func WriteToLogsApp(doneChan chan struct{}, message, logWriterAppName string) {
 }
 
 func SyslogDrainAddress(appName string) string {
-	cfg := draincli.Config()
+	cfg := cli.Config()
 
 	var address []byte
 	EventuallyWithOffset(1, func() []byte {

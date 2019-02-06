@@ -1,4 +1,4 @@
-package draincli_test
+package cli_test
 
 import (
 	"fmt"
@@ -10,9 +10,9 @@ import (
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/generator"
-	"github.com/cloudfoundry/cfar-logging-acceptance-tests/draincli"
+	"github.com/cloudfoundry/cfar-logging-acceptance-tests/cli"
 
-	. "github.com/cloudfoundry/cfar-logging-acceptance-tests/draincli/helpers"
+	. "github.com/cloudfoundry/cfar-logging-acceptance-tests/cli/helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
@@ -49,22 +49,22 @@ var _ = Describe("ServiceDrain", func() {
 		go func() {
 			defer wg.Done()
 			defer GinkgoRecover()
-			cf.Cf("restart", listenerAppName).Wait(draincli.Config().DefaultTimeout)
+			cf.Cf("restart", listenerAppName).Wait(cli.Config().DefaultTimeout)
 		}()
 		go func() {
 			defer wg.Done()
 			defer GinkgoRecover()
-			cf.Cf("restart", logWriterAppName1).Wait(draincli.Config().DefaultTimeout)
+			cf.Cf("restart", logWriterAppName1).Wait(cli.Config().DefaultTimeout)
 		}()
 		go func() {
 			defer wg.Done()
 			defer GinkgoRecover()
-			cf.Cf("restart", logWriterAppName2).Wait(draincli.Config().DefaultTimeout)
+			cf.Cf("restart", logWriterAppName2).Wait(cli.Config().DefaultTimeout)
 		}()
 	})
 
 	It("drains an app's logs to syslog endpoint", func() {
-		syslogDrainURL := fmt.Sprintf("https://%s.%s", listenerAppName, draincli.Config().CFDomain)
+		syslogDrainURL := fmt.Sprintf("https://%s.%s", listenerAppName, cli.Config().CFDomain)
 
 		CF(
 			"drain",
@@ -80,12 +80,12 @@ var _ = Describe("ServiceDrain", func() {
 		go WriteToLogsApp(interrupt, randomMessage1, logWriterAppName1)
 		go WriteToLogsApp(interrupt, randomMessage2, logWriterAppName2)
 
-		Eventually(logs, draincli.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage1))
+		Eventually(logs, cli.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage1))
 		Consistently(logs, 10).ShouldNot(Say(randomMessage2))
 	})
 
 	It("drains an app's logs to syslog endpoint using agent", func() {
-		syslogDrainAddr := fmt.Sprintf("%s.%s", listenerAppName, draincli.Config().CFDomain)
+		syslogDrainAddr := fmt.Sprintf("%s.%s", listenerAppName, cli.Config().CFDomain)
 		syslogDrainURL := "https://" + syslogDrainAddr
 
 		CF(
@@ -104,7 +104,7 @@ var _ = Describe("ServiceDrain", func() {
 	})
 
 	It("binds an app to a syslog endpoint", func() {
-		syslogDrainURL := fmt.Sprintf("https://%s.%s", listenerAppName, draincli.Config().CFDomain)
+		syslogDrainURL := fmt.Sprintf("https://%s.%s", listenerAppName, cli.Config().CFDomain)
 		drainName := fmt.Sprintf("some-drain-%d", time.Now().UnixNano())
 
 		CF(
@@ -128,12 +128,12 @@ var _ = Describe("ServiceDrain", func() {
 		go WriteToLogsApp(interrupt, randomMessage1, logWriterAppName1)
 		go WriteToLogsApp(interrupt, randomMessage2, logWriterAppName2)
 
-		Eventually(logs, draincli.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage1))
-		Eventually(logs, draincli.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage2))
+		Eventually(logs, cli.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage1))
+		Eventually(logs, cli.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage2))
 	})
 
 	It("drains all apps in space to a syslog endpoint", func() {
-		syslogDrainURL := fmt.Sprintf("https://%s.%s", listenerAppName, draincli.Config().CFDomain)
+		syslogDrainURL := fmt.Sprintf("https://%s.%s", listenerAppName, cli.Config().CFDomain)
 		drainName := fmt.Sprintf("some-drain-%d", time.Now().UnixNano())
 
 		execPath, err := Build("code.cloudfoundry.org/cf-drain-cli/cmd/space_drain")
@@ -159,15 +159,15 @@ var _ = Describe("ServiceDrain", func() {
 		go WriteToLogsApp(interrupt, randomMessage1, logWriterAppName1)
 		go WriteToLogsApp(interrupt, randomMessage2, logWriterAppName2)
 
-		Eventually(logs, draincli.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage1))
-		Eventually(logs, draincli.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage2))
+		Eventually(logs, cli.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage1))
+		Eventually(logs, cli.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage2))
 
 		// Apps are the first column listed.
 		re := regexp.MustCompile(fmt.Sprintf(`^(%s)`, drainName))
 
 		Consistently(func() string {
 			s := cf.Cf("drains")
-			Eventually(s, draincli.Config().DefaultTimeout).Should(Exit(0))
+			Eventually(s, cli.Config().DefaultTimeout).Should(Exit(0))
 
 			for _, line := range strings.Split(string(s.Out.Contents()), "\n") {
 				if re.Match([]byte(line)) {
@@ -176,11 +176,11 @@ var _ = Describe("ServiceDrain", func() {
 			}
 
 			return ""
-		}, draincli.Config().DefaultTimeout).ShouldNot(ContainSubstring(drainName))
+		}, cli.Config().DefaultTimeout).ShouldNot(ContainSubstring(drainName))
 	})
 
 	It("deletes space-drain but not other drains", func() {
-		syslogDrainURL := fmt.Sprintf("https://%s.%s", listenerAppName, draincli.Config().CFDomain)
+		syslogDrainURL := fmt.Sprintf("https://%s.%s", listenerAppName, cli.Config().CFDomain)
 		drainName := fmt.Sprintf("some-drain-%d", time.Now().UnixNano())
 		singleDrainName := fmt.Sprintf("single-some-drain-%d", time.Now().UnixNano())
 
@@ -206,9 +206,9 @@ var _ = Describe("ServiceDrain", func() {
 
 		Eventually(func() string {
 			s := cf.Cf("drains")
-			Eventually(s, draincli.Config().DefaultTimeout).Should(Exit(0))
+			Eventually(s, cli.Config().DefaultTimeout).Should(Exit(0))
 			return string(append(s.Out.Contents(), s.Err.Contents()...))
-		}, draincli.Config().DefaultTimeout+3*time.Minute, 500).Should(And(
+		}, cli.Config().DefaultTimeout+3*time.Minute, 500).Should(And(
 			ContainSubstring(drainName),
 			ContainSubstring(singleDrainName),
 		))
@@ -222,20 +222,20 @@ var _ = Describe("ServiceDrain", func() {
 
 		Eventually(func() string {
 			s := cf.Cf("drains")
-			Eventually(s, draincli.Config().DefaultTimeout).Should(Exit(0))
+			Eventually(s, cli.Config().DefaultTimeout).Should(Exit(0))
 			return string(append(s.Out.Contents(), s.Err.Contents()...))
-		}, draincli.Config().DefaultTimeout+3*time.Minute, 500).ShouldNot(ContainSubstring(drainName))
+		}, cli.Config().DefaultTimeout+3*time.Minute, 500).ShouldNot(ContainSubstring(drainName))
 
 		Consistently(func() string {
 			s := cf.Cf("drains")
-			Eventually(s, draincli.Config().DefaultTimeout).Should(Exit(0))
+			Eventually(s, cli.Config().DefaultTimeout).Should(Exit(0))
 			return string(append(s.Out.Contents(), s.Err.Contents()...))
-		}, draincli.Config().DefaultTimeout).Should(ContainSubstring(singleDrainName))
+		}, cli.Config().DefaultTimeout).Should(ContainSubstring(singleDrainName))
 	})
 
 	It("lists all the drains", func() {
 		drainName := fmt.Sprintf("some-drain-%d", time.Now().UnixNano())
-		syslogDrainURL := fmt.Sprintf("https://%s.%s", listenerAppName, draincli.Config().CFDomain)
+		syslogDrainURL := fmt.Sprintf("https://%s.%s", listenerAppName, cli.Config().CFDomain)
 
 		CF(
 			"drain",
@@ -245,13 +245,13 @@ var _ = Describe("ServiceDrain", func() {
 		)
 
 		Eventually(func() *Session {
-			return cf.Cf("drains").Wait(draincli.Config().DefaultTimeout)
-		}, draincli.Config().DefaultTimeout, 500).Should(Say(drainsRegex))
+			return cf.Cf("drains").Wait(cli.Config().DefaultTimeout)
+		}, cli.Config().DefaultTimeout, 500).Should(Say(drainsRegex))
 	})
 
 	It("deletes the drain", func() {
 		drainName := fmt.Sprintf("some-drain-%d", time.Now().UnixNano())
-		syslogDrainURL := fmt.Sprintf("https://%s.%s", listenerAppName, draincli.Config().CFDomain)
+		syslogDrainURL := fmt.Sprintf("https://%s.%s", listenerAppName, cli.Config().CFDomain)
 
 		CF(
 			"drain",
@@ -262,8 +262,8 @@ var _ = Describe("ServiceDrain", func() {
 		)
 
 		Eventually(func() *Session {
-			return cf.Cf("drains").Wait(draincli.Config().DefaultTimeout)
-		}, draincli.Config().DefaultTimeout*2, 500).Should(Say(drainsRegex))
+			return cf.Cf("drains").Wait(cli.Config().DefaultTimeout)
+		}, cli.Config().DefaultTimeout*2, 500).Should(Say(drainsRegex))
 
 		CF(
 			"delete-drain",
@@ -272,12 +272,12 @@ var _ = Describe("ServiceDrain", func() {
 		)
 
 		Consistently(func() *Session {
-			return cf.Cf("drains").Wait(draincli.Config().DefaultTimeout)
-		}, draincli.Config().DefaultTimeout).ShouldNot(Say(drainName))
+			return cf.Cf("drains").Wait(cli.Config().DefaultTimeout)
+		}, cli.Config().DefaultTimeout).ShouldNot(Say(drainName))
 	})
 
 	It("drain-space reports error when space-drain with same drain-name exists", func() {
-		syslogDrainURL := fmt.Sprintf("https://%s.%s", listenerAppName, draincli.Config().CFDomain)
+		syslogDrainURL := fmt.Sprintf("https://%s.%s", listenerAppName, cli.Config().CFDomain)
 		drainName := fmt.Sprintf("some-drain-%d", time.Now().UnixNano())
 
 		execPath, err := Build("code.cloudfoundry.org/cf-drain-cli/cmd/space_drain")
@@ -300,7 +300,7 @@ var _ = Describe("ServiceDrain", func() {
 			"--path", path.Dir(execPath),
 		)
 
-		Eventually(drainSpace, draincli.Config().DefaultTimeout).Should(Say("A drain with that name already exists. Use --drain-name to create a drain with a different name."))
+		Eventually(drainSpace, cli.Config().DefaultTimeout).Should(Say("A drain with that name already exists. Use --drain-name to create a drain with a different name."))
 	})
 
 	It("a space-drain cannot drain to itself or to any other space-drains", func() {
@@ -334,8 +334,8 @@ var _ = Describe("ServiceDrain", func() {
 
 		Eventually(func() string {
 			s := cf.Cf("drains")
-			Eventually(s, draincli.Config().DefaultTimeout).Should(Exit(0))
+			Eventually(s, cli.Config().DefaultTimeout).Should(Exit(0))
 			return string(append(s.Out.Contents(), s.Err.Contents()...))
-		}, draincli.Config().DefaultTimeout+3*time.Minute, 500).ShouldNot(MatchRegexp(papertrailDrainRegex))
+		}, cli.Config().DefaultTimeout+3*time.Minute, 500).ShouldNot(MatchRegexp(papertrailDrainRegex))
 	})
 })

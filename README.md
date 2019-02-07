@@ -7,9 +7,9 @@ To run the CFAR logging acceptance tests you must have a user with permissions
 to create orgs and spaces.
 
 ```
-export USERNAME=<username>
-export PASSWORD=<password>
-export API_ENDPOINT=api.<system_domain>
+export CF_ADMIN_USER=<username>
+export CF_ADMIN_PASSWORD=<password>
+export CF_DOMAIN=<system_domain>
 export SKIP_SSL_VALIDATION=false
 
 go get -t ./...

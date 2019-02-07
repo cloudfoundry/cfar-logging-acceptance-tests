@@ -44,7 +44,7 @@ var _ = Describe("LogStream", func() {
 	})
 
 	It("filters on source id when passed as args", func() {
-		logs = LogStream("doppler", "gorouter", "whatever")
+		logs = LogStream("doppler")
 
 		Consistently(logs, cli.Config().DefaultTimeout+1*time.Minute).ShouldNot(Say("\"source_id\":\"gorouter\""))
 		Eventually(logs, cli.Config().DefaultTimeout+3*time.Minute).Should(Say("\"source_id\":\"doppler\""))

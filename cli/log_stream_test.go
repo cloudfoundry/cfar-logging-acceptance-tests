@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
-var _ = FDescribe("LogStream", func() {
+var _ = Describe("LogStream", func() {
 
 	var (
 		interrupt chan struct{}
@@ -35,11 +35,18 @@ var _ = FDescribe("LogStream", func() {
 	})
 
 	It("prints logs", func() {
-		randomMessage1 := generator.PrefixedRandomName("RANDOM-MESSAGE-A", "LOG")
+		randomMessage := generator.PrefixedRandomName("RANDOM-MESSAGE-A", "LOG")
 
-		go WriteToLogsApp(interrupt, randomMessage1, logWriterAppName1)
+		go WriteToLogsApp(interrupt, randomMessage, logWriterAppName1)
 
 		logs = LogStream()
-		Eventually(logs, cli.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage1))
+		Eventually(logs, cli.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage))
+	})
+
+	It("filters on source id when passed as args", func() {
+		logs = LogStream("doppler", "gorouter", "whatever")
+
+		Consistently(logs, cli.Config().DefaultTimeout+1*time.Minute).ShouldNot(Say("\"source_id\":\"gorouter\""))
+		Eventually(logs, cli.Config().DefaultTimeout+3*time.Minute).Should(Say("\"source_id\":\"doppler\""))
 	})
 })

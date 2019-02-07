@@ -47,10 +47,11 @@ func LogsFollow(appName string) *Session {
 	return s
 }
 
-func LogStream() *Session {
+func LogStream(args ...string) *Session {
 	var s *Session
 	SilienceGinkgoWriter(func() {
-		s = cf.Cf("log-stream")
+		args = append([]string{"log-stream"}, args...)
+		s = cf.Cf(args...)
 	})
 
 	return s

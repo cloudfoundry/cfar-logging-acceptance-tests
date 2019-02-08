@@ -184,7 +184,11 @@ var _ = Describe("ServiceDrain", func() {
 		drainName := fmt.Sprintf("some-drain-%d", time.Now().UnixNano())
 		singleDrainName := fmt.Sprintf("single-some-drain-%d", time.Now().UnixNano())
 
-		execPath, err := Build("code.cloudfoundry.org/cf-drain-cli/cmd/space_drain")
+		execPath, err := BuildWithEnvironment("code.cloudfoundry.org/cf-drain-cli/cmd/space_drain", []string{
+			"GOOS=linux",
+			"GOARCH=amd64",
+		})
+
 		Expect(err).ToNot(HaveOccurred())
 
 		defer CleanupBuildArtifacts()

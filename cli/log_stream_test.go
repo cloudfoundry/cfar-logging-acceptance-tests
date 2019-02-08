@@ -49,4 +49,12 @@ var _ = Describe("LogStream", func() {
 		Consistently(logs, cli.Config().DefaultTimeout+1*time.Minute).ShouldNot(Say("\"source_id\":\"gorouter\""))
 		Eventually(logs, cli.Config().DefaultTimeout+3*time.Minute).Should(Say("\"source_id\":\"doppler\""))
 	})
+
+	It("filters on metric type when passed as flags", func() {
+		logs = LogStream("--type", "gauge", "-t", "counter")
+
+		Consistently(logs, cli.Config().DefaultTimeout+1*time.Minute).ShouldNot(Say("\"log\":"))
+		Eventually(logs, cli.Config().DefaultTimeout+3*time.Minute).Should(Say("\"gauge\":"))
+		Eventually(logs, cli.Config().DefaultTimeout+3*time.Minute).Should(Say("\"counter\":"))
+	})
 })

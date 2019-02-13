@@ -43,6 +43,15 @@ var _ = Describe("LogStream", func() {
 		Eventually(logs, cli.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage))
 	})
 
+	It("prints logs by app name", func() {
+		randomMessage := generator.PrefixedRandomName("RANDOM-MESSAGE-B", "LOG")
+
+		go WriteToLogsApp(interrupt, randomMessage, logWriterAppName1)
+
+		logs = LogStream(logWriterAppName1)
+		Eventually(logs, cli.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage))
+	})
+
 	It("filters on source id when passed as args", func() {
 		logs = LogStream("doppler")
 

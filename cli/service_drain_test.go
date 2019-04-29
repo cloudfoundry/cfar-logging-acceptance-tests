@@ -84,25 +84,6 @@ var _ = Describe("ServiceDrain", func() {
 		Consistently(logs, 10).ShouldNot(Say(randomMessage2))
 	})
 
-	It("drains an app's logs to syslog endpoint using agent", func() {
-		syslogDrainAddr := fmt.Sprintf("%s.%s", listenerAppName, cli.Config().CFDomain)
-		syslogDrainURL := "https://" + syslogDrainAddr
-
-		CF(
-			"drain",
-			logWriterAppName1,
-			syslogDrainURL,
-			"--use-agent",
-		)
-
-		s := Drains()
-		contents := string(s.Out.Contents())
-
-		Expect(contents).To(ContainSubstring("https-v3://" + syslogDrainAddr))
-		Expect(contents).To(ContainSubstring("Use Agent"))
-		Expect(contents).To(ContainSubstring("true"))
-	})
-
 	It("binds an app to a syslog endpoint", func() {
 		syslogDrainURL := fmt.Sprintf("https://%s.%s", listenerAppName, cli.Config().CFDomain)
 		drainName := fmt.Sprintf("some-drain-%d", time.Now().UnixNano())

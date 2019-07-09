@@ -46,10 +46,10 @@ var _ = Describe("cf logs --recent", func() {
 		defer teardownApp(appA)
 		defer teardownApp(appB)
 
-		Eventually(cf.Cf("logs", appA, "--recent"), 10).Should(Say("APP_LOG: " + appA))
-		Eventually(cf.Cf("logs", appB, "--recent"), 10).Should(Say("APP_LOG: " + appB))
-		Consistently(cf.Cf("logs", appA, "--recent")).ShouldNot(Say("APP_LOG: " + appB))
-		Consistently(cf.Cf("logs", appB, "--recent")).ShouldNot(Say("APP_LOG: " + appA))
+		Eventually(cf.Cf("logs", appA, "--recent"), defaultTimeout).Should(Say("APP_LOG: " + appA))
+		Eventually(cf.Cf("logs", appB, "--recent"), defaultTimeout).Should(Say("APP_LOG: " + appB))
+		Consistently(cf.Cf("logs", appA, "--recent"), defaultTimeout).ShouldNot(Say("APP_LOG: " + appB))
+		Consistently(cf.Cf("logs", appB, "--recent"), 10).ShouldNot(Say("APP_LOG: " + appA))
 	})
 })
 

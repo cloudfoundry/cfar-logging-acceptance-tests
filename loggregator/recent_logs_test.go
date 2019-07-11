@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	envstruct "code.cloudfoundry.org/go-envstruct"
+	"code.cloudfoundry.org/go-envstruct"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/generator"
@@ -46,12 +46,20 @@ var _ = Describe("cf logs --recent", func() {
 		defer teardownApp(appA)
 		defer teardownApp(appB)
 
-		Eventually(cf.Cf("logs", appA, "--recent"), defaultTimeout).Should(Say("APP_LOG: " + appA))
-		Eventually(cf.Cf("logs", appB, "--recent"), defaultTimeout).Should(Say("APP_LOG: " + appB))
-		Consistently(cf.Cf("logs", appA, "--recent"), defaultTimeout).ShouldNot(Say("APP_LOG: " + appB))
-		Consistently(cf.Cf("logs", appB, "--recent"), 10).ShouldNot(Say("APP_LOG: " + appA))
+		Eventually(getRecentLogs(appA), defaultTimeout).Should(Say("APP_LOG: " + appA))
+		Eventually(getRecentLogs(appB), defaultTimeout).Should(Say("APP_LOG: " + appB))
+		Consistently(getRecentLogs(appA), defaultTimeout).ShouldNot(Say("APP_LOG: " + appB))
+		Consistently(getRecentLogs(appB), 10).ShouldNot(Say("APP_LOG: " + appA))
 	})
 })
+
+func getRecentLogs(appName string) func() *Buffer {
+	return func() *Buffer {
+		session := cf.Cf("logs", appName, "--recent")
+		session = session.Wait(defaultTimeout)
+		return session.Out
+	}
+}
 
 type config struct {
 	Username          string `env:"CF_ADMIN_USER,     required"`

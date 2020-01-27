@@ -61,12 +61,14 @@ func PushLogWriter() string {
 	cfg := cli.Config()
 	appName := generator.PrefixedRandomName("LOG-EMITTER", "")
 
-	EventuallyWithOffset(1, cf.Cf(
+	session := cf.Cf(
 		"push",
 		appName,
 		"-p", logEmitterApp,
 		"-m", "64M",
-	), cfg.AppPushTimeout).Should(Exit(0), "Failed to push app")
+	)
+
+	EventuallyWithOffset(1, func() *Session {return session}, cfg.AppPushTimeout).Should(Exit(0), "Failed to push app")
 
 	return appName
 }
@@ -75,7 +77,7 @@ func PushSyslogServer() string {
 	cfg := cli.Config()
 	appName := generator.PrefixedRandomName("SYSLOG-SERVER", "")
 
-	EventuallyWithOffset(1, cf.Cf(
+	session := cf.Cf(
 		"push",
 		appName,
 		"--health-check-type", "port",
@@ -83,7 +85,8 @@ func PushSyslogServer() string {
 		"-b", "go_buildpack",
 		"-f", syslogDrain+"/manifest.yml",
 		"-m", "64M",
-	), cfg.AppPushTimeout).Should(Exit(0), "Failed to push app")
+	)
+	EventuallyWithOffset(1, func() *Session {return session}, cfg.AppPushTimeout).Should(Exit(0), "Failed to push app")
 
 	return appName
 }

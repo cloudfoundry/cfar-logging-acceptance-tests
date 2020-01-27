@@ -121,7 +121,7 @@ func createSpace() string {
 
 func deployLogApp(name string) string {
 	appName := randomName(name)
-	Eventually(cf.Cf(
+	session := cf.Cf(
 		"push",
 		appName,
 		"--no-start",
@@ -129,13 +129,17 @@ func deployLogApp(name string) string {
 		"-m", "64M",
 		"-u", "none",
 		"-p", os.Getenv("GOPATH")+"/src/github.com/cloudfoundry/cfar-logging-acceptance-tests/apps/constant-logger",
-	), defaultTimeout).Should(Exit(0), "Failed to push "+appName)
+	)
 
-	Eventually(cf.Cf(
+	Eventually(func() *Session {return session}, defaultTimeout).Should(Exit(0), "Failed to push "+appName)
+
+	session = cf.Cf(
 		"set-env",
 		appName,
 		"GOPACKAGENAME", "github.com/cloudfoundry/cfar-logging-acceptance-tests/apps/constant-logger",
-	), defaultTimeout).Should(Exit(0), "Failed to push "+appName)
+	)
+
+	Eventually(func() *Session {return session}, defaultTimeout).Should(Exit(0), "Failed to push "+appName)
 
 	Expect(cf.Cf("start", appName).Wait(defaultTimeout * 3)).Should(Exit(0))
 

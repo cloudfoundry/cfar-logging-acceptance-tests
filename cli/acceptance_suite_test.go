@@ -97,14 +97,23 @@ func createOrgAndSpace(cfg *cli.TestConfig) {
 	org = generator.PrefixedRandomName(TestPrefix, "org")
 	space = generator.PrefixedRandomName(TestPrefix, "space")
 
-	Eventually(cf.Cf("create-org", org), cfg.DefaultTimeout).Should(Exit(0))
-	Eventually(cf.Cf("create-space", space, "-o", org), cfg.DefaultTimeout).Should(Exit(0))
+	session := cf.Cf("create-org", org)
+	Eventually(func() *Session { return session },
+		cfg.DefaultTimeout).Should(Exit(0))
+
+	session = cf.Cf("create-space", space, "-o", org)
+	Eventually(func() *Session { return session },
+		cfg.DefaultTimeout).Should(Exit(0))
 }
 
 func cfTarget(cfg *cli.TestConfig) {
-	Eventually(cf.Cf("target", "-o", org, "-s", space), cfg.DefaultTimeout).Should(Exit(0))
+	session := cf.Cf("target", "-o", org, "-s", space)
+	Eventually(func() *Session { return session },
+		cfg.DefaultTimeout).Should(Exit(0))
 }
 
 func deleteOrg(cfg *cli.TestConfig) {
-	Eventually(cf.Cf("delete-org", org, "-f"), cfg.DefaultTimeout).Should(Exit(0))
+	session := cf.Cf("delete-org", org, "-f")
+	Eventually(func() *Session { return session },
+		cfg.DefaultTimeout).Should(Exit(0))
 }

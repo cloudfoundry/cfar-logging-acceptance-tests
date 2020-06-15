@@ -52,6 +52,13 @@ var _ = Describe("LogStream", func() {
 		Eventually(logs, cli.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage))
 	})
 
+	It("prints statsd metrics from uaa", func() {
+		logs = LogStream("uaa")
+
+		Eventually(logs, cli.Config().DefaultTimeout+3*time.Minute).Should(Say("\"source_id\":\"uaa\""))
+		Eventually(logs, cli.Config().DefaultTimeout+3*time.Minute).Should(Say("\"metrics\":{\"requests.global.completed.count\":{\"unit\":\"counter\""))
+	})
+
 	It("filters on source id when passed as args", func() {
 		logs = LogStream("doppler")
 
